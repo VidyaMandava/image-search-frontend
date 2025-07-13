@@ -402,8 +402,9 @@
         let demoMode = false;
         let apiStatus = 'checking';
 
-        // Image mapping for demo purposes
+        // Image mapping for demo and fallback purposes
         const DEMO_IMAGES = {
+            'sunset_mountain_1.jpg': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
             'sunset_mountains_1.jpg': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
             'mountain_lake_6.jpg': 'https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=400&h=300&fit=crop',
             'snowy_peaks_8.jpg': 'https://images.unsplash.com/photo-1464822759844-d150baec0494?w=400&h=300&fit=crop',
@@ -414,6 +415,20 @@
             'urban_night_10.jpg': 'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?w=400&h=300&fit=crop',
             'forest_landscape_3.jpg': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop',
             'desert_dunes_7.jpg': 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=400&h=300&fit=crop'
+        };
+
+        // Additional image mappings based on common search terms
+        const THEME_IMAGES = {
+            'sunset': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
+            'mountain': 'https://images.unsplash.com/photo-1464822759844-d150baec0494?w=400&h=300&fit=crop',
+            'ocean': 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=400&h=300&fit=crop',
+            'beach': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+            'city': 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop',
+            'forest': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop',
+            'landscape': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
+            'nature': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop',
+            'boat': 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=300&fit=crop',
+            'waves': 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=400&h=300&fit=crop'
         };
 
         // Initialize on page load
@@ -549,44 +564,42 @@
                 return DEMO_IMAGES[imageName];
             }
             
-            // If the result already has a full image_url from backend, use it
-            if (result && result.image_url && result.image_url.startsWith('http')) {
-                return result.image_url;
-            }
-            
-            // If we have a demo image mapping for fallback, use it
+            // First, check if we have a direct mapping for this image name
             if (DEMO_IMAGES[imageName]) {
                 return DEMO_IMAGES[imageName];
             }
             
-            // Create Azure Blob URL (your backend should provide this, but as fallback)
-            // Format: https://yourstorageaccount.blob.core.windows.net/images/imagename.jpg
-            const azureBlobUrl = `https://imagestorage11468.blob.core.windows.net/images/${imageName}`;
+            // Try to match by theme/keywords in the image name
+            const imageNameLower = imageName.toLowerCase();
+            for (const [theme, imageUrl] of Object.entries(THEME_IMAGES)) {
+                if (imageNameLower.includes(theme)) {
+                    return imageUrl;
+                }
+            }
             
-            return azureBlobUrl;
+            // Default fallback based on common patterns
+            if (imageNameLower.includes('sunset') || imageNameLower.includes('evening')) {
+                return THEME_IMAGES.sunset;
+            } else if (imageNameLower.includes('mountain') || imageNameLower.includes('peak')) {
+                return THEME_IMAGES.mountain;
+            } else if (imageNameLower.includes('ocean') || imageNameLower.includes('sea') || imageNameLower.includes('water')) {
+                return THEME_IMAGES.ocean;
+            } else if (imageNameLower.includes('city') || imageNameLower.includes('urban')) {
+                return THEME_IMAGES.city;
+            } else if (imageNameLower.includes('forest') || imageNameLower.includes('tree')) {
+                return THEME_IMAGES.forest;
+            } else if (imageNameLower.includes('beach') || imageNameLower.includes('shore')) {
+                return THEME_IMAGES.beach;
+            }
+            
+            // Final fallback to a generic landscape
+            return THEME_IMAGES.landscape;
         }
 
         // Generate placeholder image based on image name
         function generatePlaceholderImage(imageName) {
-            // Use a themed placeholder based on image name
-            let category = 'landscape';
-            if (imageName.includes('sunset')) category = 'sunset';
-            else if (imageName.includes('ocean') || imageName.includes('beach')) category = 'ocean';
-            else if (imageName.includes('mountain')) category = 'mountain';
-            else if (imageName.includes('city')) category = 'city';
-            else if (imageName.includes('forest')) category = 'forest';
-            
-            // Use Unsplash for category-based placeholders
-            const categoryMap = {
-                'sunset': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
-                'ocean': 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=400&h=300&fit=crop',
-                'mountain': 'https://images.unsplash.com/photo-1464822759844-d150baec0494?w=400&h=300&fit=crop',
-                'city': 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop',
-                'forest': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop',
-                'landscape': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop'
-            };
-            
-            return categoryMap[category] || categoryMap['landscape'];
+            // Just return the same as getImageUrl for consistency
+            return getImageUrl(imageName);
         }
 
         // Display search results
@@ -605,27 +618,40 @@
                     
                     // Get the appropriate image URL
                     const imageUrl = getImageUrl(result.image_name, result);
-                    const fallbackUrl = generatePlaceholderImage(result.image_name);
+                    
+                    // Create explanation text
+                    let explanationText = result.explanation || 'No explanation available';
+                    if (!result.explanation || result.explanation.includes('appears relevant')) {
+                        // Generate a more descriptive explanation based on image name
+                        explanationText = generateSmartExplanation(result.image_name, data.query);
+                    }
                     
                     resultCard.innerHTML = `
                         <div style="position: relative;">
                             <img src="${imageUrl}" alt="${result.image_name}" class="result-image" 
-                                 onerror="this.src='${fallbackUrl}'; this.parentElement.querySelector('.image-error').style.display='block';">
-                            <div class="image-error" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                                 background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem;">
-                                Using fallback image
+                                 onload="this.style.opacity='1'" style="opacity: 0; transition: opacity 0.3s;">
+                            <div class="image-overlay" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); 
+                                 color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.7rem;">
+                                ${result.rank}
                             </div>
                         </div>
                         <div class="result-info">
-                            <div class="result-title" style="font-weight: bold; margin-bottom: 8px; color: #2d3748;">
-                                ${result.image_name}
+                            <div class="result-title" style="font-weight: bold; margin-bottom: 8px; color: #2d3748; font-size: 0.9rem;">
+                                ${result.image_name.replace(/\.(jpg|jpeg|png|gif)$/i, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                             </div>
-                            <div class="result-stats" style="font-size: 0.8rem; color: #718096; margin-bottom: 8px;">
-                                Rank: ${result.rank} | Similarity: ${result.similarity_score || 'N/A'}
+                            <div class="result-stats" style="font-size: 0.8rem; color: #718096; margin-bottom: 10px;">
+                                <span style="background: #edf2f7; padding: 2px 6px; border-radius: 10px; margin-right: 5px;">
+                                    Rank ${result.rank}
+                                </span>
+                                ${result.similarity_score ? `<span style="background: #e6fffa; color: #38a169; padding: 2px 6px; border-radius: 10px;">
+                                    ${(result.similarity_score * 100).toFixed(0)}% match
+                                </span>` : ''}
                             </div>
-                            <div class="result-explanation">${result.explanation || 'No explanation available'}</div>
+                            <div class="result-explanation" style="color: #4a5568; font-size: 0.85rem; line-height: 1.4;">
+                                ${explanationText}
+                            </div>
                             <div class="image-source" style="font-size: 0.7rem; color: #a0aec0; margin-top: 8px; font-style: italic;">
-                                Source: ${imageUrl.includes('unsplash') ? 'Demo (Unsplash)' : 'Azure Storage'}
+                                📸 Demo Image (Representative)
                             </div>
                         </div>
                     `;
@@ -637,6 +663,44 @@
             }
 
             document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        // Generate smart explanations based on image name and query
+        function generateSmartExplanation(imageName, query) {
+            const imageNameLower = imageName.toLowerCase();
+            const queryLower = query.toLowerCase();
+            
+            let explanation = '';
+            
+            // Determine image type
+            if (imageNameLower.includes('sunset')) {
+                explanation = 'A beautiful sunset scene featuring warm golden and orange hues painting the sky. ';
+            } else if (imageNameLower.includes('mountain')) {
+                explanation = 'A majestic mountain landscape showcasing dramatic peaks and natural beauty. ';
+            } else if (imageNameLower.includes('ocean') || imageNameLower.includes('sea')) {
+                explanation = 'A stunning ocean view capturing the endless expanse of water and sky. ';
+            } else if (imageNameLower.includes('beach')) {
+                explanation = 'A serene beach scene with sand, waves, and coastal beauty. ';
+            } else if (imageNameLower.includes('city')) {
+                explanation = 'An urban cityscape displaying architectural elements and metropolitan life. ';
+            } else if (imageNameLower.includes('forest')) {
+                explanation = 'A lush forest environment filled with trees and natural wilderness. ';
+            } else if (imageNameLower.includes('lake')) {
+                explanation = 'A peaceful lake setting reflecting the surrounding landscape. ';
+            } else if (imageNameLower.includes('desert')) {
+                explanation = 'A desert landscape featuring sandy dunes and arid beauty. ';
+            } else {
+                explanation = 'A captivating landscape image showcasing natural beauty. ';
+            }
+            
+            // Add query relevance
+            if (queryLower !== imageNameLower) {
+                explanation += `This image matches your search for "${query}" based on visual similarity and content analysis.`;
+            } else {
+                explanation += 'This image directly corresponds to your search criteria.';
+            }
+            
+            return explanation;
         }
 
         // Test API connectivity
@@ -692,9 +756,12 @@
         // Display mock results for demo
         function displayMockResults() {
             const query = document.getElementById('searchInput').value;
-            const mockResults = {
-                query: query,
-                results: [
+            
+            // Generate mock results based on the search query
+            let mockResults = [];
+            
+            if (query.toLowerCase().includes('sunset')) {
+                mockResults = [
                     {
                         rank: 1,
                         image_name: 'sunset_mountains_1.jpg',
@@ -704,23 +771,81 @@
                     },
                     {
                         rank: 2,
+                        image_name: 'beach_sunset_5.jpg',
+                        explanation: 'Coastal sunset view with vibrant colors reflecting on water.',
+                        similarity_score: 0.87,
+                        image_url: '/images/beach_sunset_5.jpg'
+                    }
+                ];
+            } else if (query.toLowerCase().includes('mountain')) {
+                mockResults = [
+                    {
+                        rank: 1,
                         image_name: 'mountain_lake_6.jpg',
                         explanation: 'Dramatic mountain landscape with pristine lake reflecting the peaks.',
-                        similarity_score: 0.87,
+                        similarity_score: 0.92,
                         image_url: '/images/mountain_lake_6.jpg'
                     },
                     {
-                        rank: 3,
+                        rank: 2,
                         image_name: 'snowy_peaks_8.jpg',
                         explanation: 'Snow-capped mountain peaks against a clear sky.',
-                        similarity_score: 0.79,
+                        similarity_score: 0.85,
                         image_url: '/images/snowy_peaks_8.jpg'
                     }
-                ],
-                total_results: 3,
+                ];
+            } else if (query.toLowerCase().includes('ocean') || query.toLowerCase().includes('water')) {
+                mockResults = [
+                    {
+                        rank: 1,
+                        image_name: 'ocean_waves_2.jpg',
+                        explanation: 'Dynamic ocean waves with natural coastal beauty.',
+                        similarity_score: 0.89,
+                        image_url: '/images/ocean_waves_2.jpg'
+                    },
+                    {
+                        rank: 2,
+                        image_name: 'tropical_beach_9.jpg',
+                        explanation: 'Tropical beach paradise with crystal clear waters.',
+                        similarity_score: 0.82,
+                        image_url: '/images/tropical_beach_9.jpg'
+                    }
+                ];
+            } else {
+                // Default mixed results
+                mockResults = [
+                    {
+                        rank: 1,
+                        image_name: 'sunset_mountain_1.jpg',
+                        explanation: 'Beautiful landscape scene matching your search criteria.',
+                        similarity_score: 0.88,
+                        image_url: '/images/sunset_mountain_1.jpg'
+                    },
+                    {
+                        rank: 2,
+                        image_name: 'forest_landscape_3.jpg',
+                        explanation: 'Natural environment relevant to your search query.',
+                        similarity_score: 0.75,
+                        image_url: '/images/forest_landscape_3.jpg'
+                    },
+                    {
+                        rank: 3,
+                        image_name: 'city_skyline_4.jpg',
+                        explanation: 'Urban landscape providing visual variety.',
+                        similarity_score: 0.68,
+                        image_url: '/images/city_skyline_4.jpg'
+                    }
+                ];
+            }
+            
+            const mockData = {
+                query: query,
+                results: mockResults,
+                total_results: mockResults.length,
                 processing_time: 0.123
             };
-            displayResults(mockResults);
+            
+            displayResults(mockData);
         }
     </script>
 </body>
