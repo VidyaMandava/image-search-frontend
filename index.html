@@ -337,18 +337,7 @@
             </div>
 
             <div class="options-row">
-                <div class="option-group">
-                    <label>Max Results:</label>
-                    <select class="dropdown" id="maxResults">
-                        <option value="5">5</option>
-                        <option value="10">10</option>
-                        <option value="20">20</option>
-                    </select>
-                </div>
-                <div class="option-group">
-                    <input type="checkbox" class="checkbox" id="includeExplanations" checked>
-                    <label for="includeExplanations">Include AI Explanations</label>
-                </div>
+                <!-- Options removed as requested -->
             </div>
         </div>
 
@@ -459,8 +448,8 @@
                 return;
             }
 
-            const maxResults = Math.min(parseInt(document.getElementById('maxResults').value), 5); // Limit to top 5
-            const includeExplanations = document.getElementById('includeExplanations').checked;
+            const maxResults = 5; // Fixed to 5 results
+            const includeExplanations = true; // Always include explanations
 
             // Hide error message
             document.getElementById('errorMessage').style.display = 'none';
