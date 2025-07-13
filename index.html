@@ -180,6 +180,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            border: none;
         }
 
         .example-tag:hover {
@@ -260,6 +261,25 @@
             line-height: 1.4;
         }
 
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .demo-mode {
+            background: #bee3f8;
+            color: #2b6cb0;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -291,8 +311,8 @@
     </style>
 </head>
 <body>
-    <div class="api-notice">
-        API Connected
+    <div class="api-notice" id="apiNotice">
+        API Status: Checking...
     </div>
 
     <div class="container">
@@ -302,6 +322,10 @@
                 AI Image Search
             </h1>
             <p>Discover images with intelligent visual search and AI explanations</p>
+        </div>
+
+        <div class="demo-mode" id="demoMode" style="display: none;">
+            🔧 Demo Mode: Using mock data. Check your API connection.
         </div>
 
         <div class="search-section">
@@ -328,6 +352,11 @@
                 <div class="option-group">
                     <button class="example-tag" onclick="testAPI()" style="margin-left: 10px;">
                         🔧 Test API
+                    </button>
+                </div>
+                <div class="option-group">
+                    <button class="example-tag" onclick="toggleDemoMode()" style="margin-left: 10px; background: #38a169;">
+                        🎭 Demo Mode
                     </button>
                 </div>
             </div>
@@ -359,6 +388,8 @@
             <p>Searching for images...</p>
         </div>
 
+        <div class="error-message" id="errorMessage"></div>
+
         <div class="results-section" id="resultsSection">
             <h3>Search Results</h3>
             <div class="results-grid" id="resultsGrid"></div>
@@ -366,6 +397,30 @@
     </div>
 
     <script>
+        // Configuration
+        const API_BASE_URL = 'https://imagesearchwebapp-cndbf3aseafydkat.southindia-01.azurewebsites.net';
+        let demoMode = false;
+        let apiStatus = 'checking';
+
+        // Image mapping for demo purposes
+        const DEMO_IMAGES = {
+            'sunset_mountains_1.jpg': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
+            'mountain_lake_6.jpg': 'https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=400&h=300&fit=crop',
+            'snowy_peaks_8.jpg': 'https://images.unsplash.com/photo-1464822759844-d150baec0494?w=400&h=300&fit=crop',
+            'ocean_waves_2.jpg': 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=400&h=300&fit=crop',
+            'beach_sunset_5.jpg': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+            'tropical_beach_9.jpg': 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=300&fit=crop',
+            'city_skyline_4.jpg': 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop',
+            'urban_night_10.jpg': 'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?w=400&h=300&fit=crop',
+            'forest_landscape_3.jpg': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop',
+            'desert_dunes_7.jpg': 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=400&h=300&fit=crop'
+        };
+
+        // Initialize on page load
+        window.addEventListener('load', function() {
+            checkAPIStatus();
+        });
+
         // Set search query from example tags
         function setSearchQuery(query) {
             document.getElementById('searchInput').value = query;
@@ -378,9 +433,45 @@
             }
         });
 
-        // API Configuration - Replace with your actual Azure Web App URL
-        const API_BASE_URL = 'YOUR_AZURE_WEB_APP_URL'; // e.g., 'https://your-app-name.azurewebsites.net'
-        
+        // Check API status
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    apiStatus = 'connected';
+                    document.getElementById('apiNotice').textContent = 'API Status: Connected ✅';
+                    document.getElementById('apiNotice').style.background = 'rgba(72, 187, 120, 0.9)';
+                    document.getElementById('apiNotice').style.color = 'white';
+                } else {
+                    throw new Error(`Status: ${response.status}`);
+                }
+            } catch (error) {
+                apiStatus = 'disconnected';
+                document.getElementById('apiNotice').textContent = 'API Status: Disconnected ❌';
+                document.getElementById('apiNotice').style.background = 'rgba(245, 101, 101, 0.9)';
+                document.getElementById('apiNotice').style.color = 'white';
+                console.error('API Health Check Failed:', error);
+            }
+        }
+
+        // Toggle demo mode
+        function toggleDemoMode() {
+            demoMode = !demoMode;
+            const demoElement = document.getElementById('demoMode');
+            if (demoMode) {
+                demoElement.style.display = 'block';
+                demoElement.textContent = '🎭 Demo Mode: ON - Using sample images';
+            } else {
+                demoElement.style.display = 'none';
+            }
+        }
+
         // Perform search function
         async function performSearch() {
             const searchQuery = document.getElementById('searchInput').value.trim();
@@ -393,9 +484,21 @@
             const maxResults = document.getElementById('maxResults').value;
             const includeExplanations = document.getElementById('includeExplanations').checked;
 
+            // Hide error message
+            document.getElementById('errorMessage').style.display = 'none';
+            
             // Show loading
             document.getElementById('loadingSection').style.display = 'block';
             document.getElementById('resultsSection').style.display = 'none';
+
+            // If demo mode is on, skip API call
+            if (demoMode) {
+                setTimeout(() => {
+                    displayMockResults();
+                    document.getElementById('loadingSection').style.display = 'none';
+                }, 1000);
+                return;
+            }
 
             try {
                 // Call your FastAPI backend
@@ -403,6 +506,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                     },
                     body: JSON.stringify({
                         query: searchQuery,
@@ -420,13 +524,69 @@
 
             } catch (error) {
                 console.error('Search error:', error);
-                alert(`Search failed: ${error.message}. Please check if the API is running.`);
+                showError(`Search failed: ${error.message}. Switching to demo mode.`);
                 
-                // For demo purposes, show mock results
+                // Automatically switch to demo mode on API failure
+                demoMode = true;
+                toggleDemoMode();
                 displayMockResults();
             } finally {
                 document.getElementById('loadingSection').style.display = 'none';
             }
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        // Get image URL for display
+        function getImageUrl(imageName, result = null) {
+            // If in demo mode, use demo images
+            if (demoMode && DEMO_IMAGES[imageName]) {
+                return DEMO_IMAGES[imageName];
+            }
+            
+            // If the result already has a full image_url from backend, use it
+            if (result && result.image_url && result.image_url.startsWith('http')) {
+                return result.image_url;
+            }
+            
+            // If we have a demo image mapping for fallback, use it
+            if (DEMO_IMAGES[imageName]) {
+                return DEMO_IMAGES[imageName];
+            }
+            
+            // Create Azure Blob URL (your backend should provide this, but as fallback)
+            // Format: https://yourstorageaccount.blob.core.windows.net/images/imagename.jpg
+            const azureBlobUrl = `https://imagestorage11468.blob.core.windows.net/images/${imageName}`;
+            
+            return azureBlobUrl;
+        }
+
+        // Generate placeholder image based on image name
+        function generatePlaceholderImage(imageName) {
+            // Use a themed placeholder based on image name
+            let category = 'landscape';
+            if (imageName.includes('sunset')) category = 'sunset';
+            else if (imageName.includes('ocean') || imageName.includes('beach')) category = 'ocean';
+            else if (imageName.includes('mountain')) category = 'mountain';
+            else if (imageName.includes('city')) category = 'city';
+            else if (imageName.includes('forest')) category = 'forest';
+            
+            // Use Unsplash for category-based placeholders
+            const categoryMap = {
+                'sunset': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
+                'ocean': 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=400&h=300&fit=crop',
+                'mountain': 'https://images.unsplash.com/photo-1464822759844-d150baec0494?w=400&h=300&fit=crop',
+                'city': 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop',
+                'forest': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop',
+                'landscape': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop'
+            };
+            
+            return categoryMap[category] || categoryMap['landscape'];
         }
 
         // Display search results
@@ -443,14 +603,19 @@
                     const resultCard = document.createElement('div');
                     resultCard.className = 'result-card';
                     
-                    // Use placeholder image since your API returns relative paths
-                    const imageUrl = result.image_url ? 
-                        `${API_BASE_URL}${result.image_url}` : 
-                        generatePlaceholderImage(result.image_name);
+                    // Get the appropriate image URL
+                    const imageUrl = getImageUrl(result.image_name, result);
+                    const fallbackUrl = generatePlaceholderImage(result.image_name);
                     
                     resultCard.innerHTML = `
-                        <img src="${imageUrl}" alt="${result.image_name}" class="result-image" 
-                             onerror="this.src='${generatePlaceholderImage(result.image_name)}'">
+                        <div style="position: relative;">
+                            <img src="${imageUrl}" alt="${result.image_name}" class="result-image" 
+                                 onerror="this.src='${fallbackUrl}'; this.parentElement.querySelector('.image-error').style.display='block';">
+                            <div class="image-error" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                                 background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem;">
+                                Using fallback image
+                            </div>
+                        </div>
                         <div class="result-info">
                             <div class="result-title" style="font-weight: bold; margin-bottom: 8px; color: #2d3748;">
                                 ${result.image_name}
@@ -459,6 +624,9 @@
                                 Rank: ${result.rank} | Similarity: ${result.similarity_score || 'N/A'}
                             </div>
                             <div class="result-explanation">${result.explanation || 'No explanation available'}</div>
+                            <div class="image-source" style="font-size: 0.7rem; color: #a0aec0; margin-top: 8px; font-style: italic;">
+                                Source: ${imageUrl.includes('unsplash') ? 'Demo (Unsplash)' : 'Azure Storage'}
+                            </div>
                         </div>
                     `;
                     
@@ -471,55 +639,61 @@
             document.getElementById('resultsSection').style.display = 'block';
         }
 
-        // Generate placeholder image based on image name
-        function generatePlaceholderImage(imageName) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 400;
-            canvas.height = 300;
-            const ctx = canvas.getContext('2d');
-            
-            // Create gradient background
-            const gradient = ctx.createLinearGradient(0, 0, 400, 300);
-            gradient.addColorStop(0, '#667eea');
-            gradient.addColorStop(1, '#764ba2');
-            
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, 400, 300);
-            
-            // Add text
-            ctx.fillStyle = 'white';
-            ctx.font = 'bold 16px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(imageName, 200, 150);
-            
-            return canvas.toDataURL();
-        }
-
         // Test API connectivity
         async function testAPI() {
-            if (!API_BASE_URL || API_BASE_URL === 'YOUR_AZURE_WEB_APP_URL') {
-                alert('Please configure your API_BASE_URL first!');
-                return;
-            }
-
             try {
-                const response = await fetch(`${API_BASE_URL}/health`);
-                const data = await response.json();
+                document.getElementById('loadingSection').style.display = 'block';
                 
-                if (response.ok) {
-                    alert(`✅ API Test Successful!\n\nStatus: ${data.status}\nMessage: ${data.message}`);
-                } else {
-                    alert(`❌ API Test Failed: ${response.status}`);
+                // Test health endpoint
+                const healthResponse = await fetch(`${API_BASE_URL}/health`);
+                
+                if (!healthResponse.ok) {
+                    throw new Error(`Health check failed: ${healthResponse.status}`);
                 }
+                
+                const healthData = await healthResponse.json();
+                
+                // Test search endpoint
+                const searchResponse = await fetch(`${API_BASE_URL}/search`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: 'test',
+                        max_results: 1,
+                        include_explanations: true
+                    })
+                });
+                
+                if (!searchResponse.ok) {
+                    throw new Error(`Search endpoint failed: ${searchResponse.status}`);
+                }
+                
+                const searchData = await searchResponse.json();
+                
+                alert(`✅ API Test Successful!\n\nHealth Status: ${healthData.status}\nSearch Test: ${searchData.total_results} results found\nProcessing Time: ${searchData.processing_time}s`);
+                
+                // Update API status
+                apiStatus = 'connected';
+                checkAPIStatus();
+                
             } catch (error) {
-                alert(`❌ API Connection Failed: ${error.message}\n\nPlease check:\n1. API URL is correct\n2. API is running\n3. CORS is enabled`);
+                alert(`❌ API Test Failed: ${error.message}\n\nPossible issues:\n1. CORS not properly configured\n2. API is down\n3. Wrong endpoint URL\n4. Network connectivity`);
+                
+                // Update API status
+                apiStatus = 'disconnected';
+                checkAPIStatus();
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
             }
         }
 
         // Display mock results for demo
         function displayMockResults() {
+            const query = document.getElementById('searchInput').value;
             const mockResults = {
-                query: document.getElementById('searchInput').value,
+                query: query,
                 results: [
                     {
                         rank: 1,
