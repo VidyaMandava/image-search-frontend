@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Search - Azure</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🔍 AI Image Search</h1>
+            <p>Powered by Azure AI and deployed on Azure Static Web Apps</p>
+        </header>
+
+        <div class="search-section">
+            <form id="searchForm" class="search-form">
+                <input 
+                    type="text" 
+                    id="searchQuery" 
+                    class="search-input"
+                    placeholder="Search for images... (e.g., 'sunset over mountains')"
+                    required
+                >
+                <button type="submit" class="search-btn" id="searchBtn">
+                    🔍 Search
+                </button>
+            </form>
+
+            <div class="search-options">
+                <label>
+                    <input type="checkbox" id="includeExplanations" checked>
+                    Include AI Explanations
+                </label>
+                <label>
+                    Max Results: 
+                    <select id="maxResults">
+                        <option value="3">3</option>
+                        <option value="5" selected>5</option>
+                        <option value="8">8</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="quick-search">
+                <button class="quick-btn" onclick="quickSearch('sunset mountains')">🌅 Sunset</button>
+                <button class="quick-btn" onclick="quickSearch('ocean waves')">🌊 Ocean</button>
+                <button class="quick-btn" onclick="quickSearch('city skyline')">🏙️ City</button>
+                <button class="quick-btn" onclick="quickSearch('forest landscape')">🌲 Forest</button>
+            </div>
+        </div>
+
+        <div class="status-section">
+            <div id="statusText">🔄 Checking API connection...</div>
+        </div>
+
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <div id="resultsHeader"></div>
+            <div id="imageGrid" class="image-grid"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
