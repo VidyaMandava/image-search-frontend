@@ -349,16 +349,6 @@
                     <input type="checkbox" class="checkbox" id="includeExplanations" checked>
                     <label for="includeExplanations">Include AI Explanations</label>
                 </div>
-                <div class="option-group">
-                    <button class="example-tag" onclick="testAPI()" style="margin-left: 10px;">
-                        🔧 Test API
-                    </button>
-                </div>
-                <div class="option-group">
-                    <button class="example-tag" onclick="toggleDemoMode()" style="margin-left: 10px; background: #38a169;">
-                        🎭 Demo Mode
-                    </button>
-                </div>
             </div>
         </div>
 
@@ -399,11 +389,10 @@
     <script>
         // Configuration
         const API_BASE_URL = 'https://imagesearchwebapp-cndbf3aseafydkat.southindia-01.azurewebsites.net';
-        let demoMode = false;
         let apiStatus = 'checking';
 
-        // Image mapping for demo and fallback purposes
-        const DEMO_IMAGES = {
+        // Selected image list - display only these images
+        const SELECTED_IMAGES = {
             'sunset_mountain_1.jpg': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
             'sunset_mountains_1.jpg': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
             'mountain_lake_6.jpg': 'https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=400&h=300&fit=crop',
@@ -415,20 +404,6 @@
             'urban_night_10.jpg': 'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?w=400&h=300&fit=crop',
             'forest_landscape_3.jpg': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop',
             'desert_dunes_7.jpg': 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=400&h=300&fit=crop'
-        };
-
-        // Additional image mappings based on common search terms
-        const THEME_IMAGES = {
-            'sunset': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
-            'mountain': 'https://images.unsplash.com/photo-1464822759844-d150baec0494?w=400&h=300&fit=crop',
-            'ocean': 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=400&h=300&fit=crop',
-            'beach': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
-            'city': 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop',
-            'forest': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop',
-            'landscape': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
-            'nature': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop',
-            'boat': 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=300&fit=crop',
-            'waves': 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=400&h=300&fit=crop'
         };
 
         // Initialize on page load
@@ -475,18 +450,6 @@
             }
         }
 
-        // Toggle demo mode
-        function toggleDemoMode() {
-            demoMode = !demoMode;
-            const demoElement = document.getElementById('demoMode');
-            if (demoMode) {
-                demoElement.style.display = 'block';
-                demoElement.textContent = '🎭 Demo Mode: ON - Using sample images';
-            } else {
-                demoElement.style.display = 'none';
-            }
-        }
-
         // Perform search function
         async function performSearch() {
             const searchQuery = document.getElementById('searchInput').value.trim();
@@ -496,7 +459,7 @@
                 return;
             }
 
-            const maxResults = document.getElementById('maxResults').value;
+            const maxResults = Math.min(parseInt(document.getElementById('maxResults').value), 5); // Limit to top 5
             const includeExplanations = document.getElementById('includeExplanations').checked;
 
             // Hide error message
@@ -505,15 +468,6 @@
             // Show loading
             document.getElementById('loadingSection').style.display = 'block';
             document.getElementById('resultsSection').style.display = 'none';
-
-            // If demo mode is on, skip API call
-            if (demoMode) {
-                setTimeout(() => {
-                    displayMockResults();
-                    document.getElementById('loadingSection').style.display = 'none';
-                }, 1000);
-                return;
-            }
 
             try {
                 // Call your FastAPI backend
@@ -525,7 +479,7 @@
                     },
                     body: JSON.stringify({
                         query: searchQuery,
-                        max_results: parseInt(maxResults),
+                        max_results: maxResults,
                         include_explanations: includeExplanations
                     })
                 });
@@ -539,12 +493,10 @@
 
             } catch (error) {
                 console.error('Search error:', error);
-                showError(`Search failed: ${error.message}. Switching to demo mode.`);
+                showError(`Search failed: ${error.message}. Please check if the API is running.`);
                 
-                // Automatically switch to demo mode on API failure
-                demoMode = true;
-                toggleDemoMode();
-                displayMockResults();
+                // Show fallback results
+                displayFallbackResults();
             } finally {
                 document.getElementById('loadingSection').style.display = 'none';
             }
@@ -557,43 +509,15 @@
             errorElement.style.display = 'block';
         }
 
-        // Get image URL for display
-        function getImageUrl(imageName, result = null) {
-            // If in demo mode, use demo images
-            if (demoMode && DEMO_IMAGES[imageName]) {
-                return DEMO_IMAGES[imageName];
+        // Get image URL for display - only from selected list
+        function getImageUrl(imageName) {
+            // Only return URLs for images in our selected list
+            if (SELECTED_IMAGES[imageName]) {
+                return SELECTED_IMAGES[imageName];
             }
             
-            // First, check if we have a direct mapping for this image name
-            if (DEMO_IMAGES[imageName]) {
-                return DEMO_IMAGES[imageName];
-            }
-            
-            // Try to match by theme/keywords in the image name
-            const imageNameLower = imageName.toLowerCase();
-            for (const [theme, imageUrl] of Object.entries(THEME_IMAGES)) {
-                if (imageNameLower.includes(theme)) {
-                    return imageUrl;
-                }
-            }
-            
-            // Default fallback based on common patterns
-            if (imageNameLower.includes('sunset') || imageNameLower.includes('evening')) {
-                return THEME_IMAGES.sunset;
-            } else if (imageNameLower.includes('mountain') || imageNameLower.includes('peak')) {
-                return THEME_IMAGES.mountain;
-            } else if (imageNameLower.includes('ocean') || imageNameLower.includes('sea') || imageNameLower.includes('water')) {
-                return THEME_IMAGES.ocean;
-            } else if (imageNameLower.includes('city') || imageNameLower.includes('urban')) {
-                return THEME_IMAGES.city;
-            } else if (imageNameLower.includes('forest') || imageNameLower.includes('tree')) {
-                return THEME_IMAGES.forest;
-            } else if (imageNameLower.includes('beach') || imageNameLower.includes('shore')) {
-                return THEME_IMAGES.beach;
-            }
-            
-            // Final fallback to a generic landscape
-            return THEME_IMAGES.landscape;
+            // If not in selected list, return null to skip this image
+            return null;
         }
 
         // Generate placeholder image based on image name
@@ -608,16 +532,27 @@
             resultsGrid.innerHTML = '';
 
             if (data.results && data.results.length > 0) {
-                // Update results section title with query info
-                document.querySelector('#resultsSection h3').textContent = 
-                    `Search Results for "${data.query}" (${data.total_results} found in ${data.processing_time}s)`;
+                // Filter results to only show images from our selected list and limit to top 5
+                const filteredResults = data.results
+                    .filter(result => SELECTED_IMAGES[result.image_name])
+                    .slice(0, 5);
 
-                data.results.forEach(result => {
+                if (filteredResults.length === 0) {
+                    resultsGrid.innerHTML = '<p style="text-align: center; color: #718096; padding: 40px;">No matching images found in our collection. Try a different search query.</p>';
+                    document.getElementById('resultsSection').style.display = 'block';
+                    return;
+                }
+
+                // Update results section title
+                document.querySelector('#resultsSection h3').textContent = 
+                    `Search Results for "${data.query}" (${filteredResults.length} found in ${data.processing_time}s)`;
+
+                filteredResults.forEach((result, index) => {
                     const resultCard = document.createElement('div');
                     resultCard.className = 'result-card';
                     
-                    // Get the appropriate image URL
-                    const imageUrl = getImageUrl(result.image_name, result);
+                    // Get the image URL from our selected list
+                    const imageUrl = getImageUrl(result.image_name);
                     
                     // Create explanation text
                     let explanationText = result.explanation || 'No explanation available';
@@ -632,7 +567,7 @@
                                  onload="this.style.opacity='1'" style="opacity: 0; transition: opacity 0.3s;">
                             <div class="image-overlay" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); 
                                  color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.7rem;">
-                                ${result.rank}
+                                ${index + 1}
                             </div>
                         </div>
                         <div class="result-info">
@@ -641,7 +576,7 @@
                             </div>
                             <div class="result-stats" style="font-size: 0.8rem; color: #718096; margin-bottom: 10px;">
                                 <span style="background: #edf2f7; padding: 2px 6px; border-radius: 10px; margin-right: 5px;">
-                                    Rank ${result.rank}
+                                    Rank ${index + 1}
                                 </span>
                                 ${result.similarity_score ? `<span style="background: #e6fffa; color: #38a169; padding: 2px 6px; border-radius: 10px;">
                                     ${(result.similarity_score * 100).toFixed(0)}% match
@@ -649,9 +584,6 @@
                             </div>
                             <div class="result-explanation" style="color: #4a5568; font-size: 0.85rem; line-height: 1.4;">
                                 ${explanationText}
-                            </div>
-                            <div class="image-source" style="font-size: 0.7rem; color: #a0aec0; margin-top: 8px; font-style: italic;">
-                                📸 Demo Image (Representative)
                             </div>
                         </div>
                     `;
